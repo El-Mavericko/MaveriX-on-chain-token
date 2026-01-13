@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MaveriX Token (MX)</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.2/dist/ethers.min.js"></script>
+</head>
+<body>
+  <h2>MaveriX Token (MX)</h2>
+
+  <button onclick="connectWallet()">Connect Wallet</button>
+  <p id="walletAddress"></p>
+
+  <hr>
+
+  <h3>Check Balance</h3>
+  <input type="text" id="balanceAddress" placeholder="Enter wallet address">
+  <button onclick="checkBalance()">Check</button>
+  <p id="balanceResult"></p>
+
+  <hr>
+
+  <h3>Transfer MX</h3>
+  <input type="text" id="toAddress" placeholder="Recipient address"><br><br>
+  <input type="text" id="amount" placeholder="Amount (MX)">
+  <button onclick="transfer()">Send</button>
+  <p id="transferStatus"></p>
+
+  <script>
+    const tokenAddress = "0xA2ED8593219c72622640E7F206Ad4474B8ECeAFA";
+    const tokenABI = [
+      "function balanceOf(address) view returns (uint256)",
+      "function transfer(address to, uint256 amount) returns (bool)"
+    ];
+
+    let provider, signer, contract;
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert("MetaMask not found");
+        return;
+      }
+
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+      provider = new ethers.BrowserProvider(window.ethereum);
+      signer = await provider.getSigner();
+      contract = new ethers.Contract(tokenAddress, tokenABI, signer);
+
+      const address = await signer.getAddress();
+      document.getElementById("walletAddress").innerText = `Connected: ${address}`;
+    }
+
+    async function checkBalance() {
+      const address = document.getElementById("balanceAddress").value;
+      if (!ethers.isAddress(address)) {
+        alert("Invalid address");
+        return;
+      }
+
+      const balance = await contract.balanceOf(address);
+      document.getElementById("balanceResult").innerText =
+        `Balance: ${ethers.formatUnits(balance, 18)} MX`;
+    }
+
+    async function transfer() {
+      const to = document.getElementById("toAddress").value;
+      const amount = document.getElementById("amount").value;
+
+      if (!ethers.isAddress(to)) {
+        alert("Invalid recipient address");
+        return;
+      }
+
+      const tx = await contract.transfer(to, ethers.parseUnits(amount, 18));
+      await tx.wait();
+      document.getElementById("transferStatus").innerText =
+        `Transfer complete: ${tx.hash}`;
+    }
+  </script>
+</body>
+</html>
